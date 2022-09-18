@@ -159,12 +159,12 @@ Sha_Ptr<T>::Sha_Ptr(Sha_Ptr&& object)
 	object.size = 0;
 }
 template<typename T>
-T& Uni_Ptr<T>::operator*()
+T& Sha_Ptr<T>::operator*()
 {
 	return *ptr;
 }
 template<typename T>
-Uni_Ptr<T>& Uni_Ptr<T>::operator=(Uni_Ptr&& object)
+Sha_Ptr<T>& Sha_Ptr<T>::operator=(Sha_Ptr&& object)
 {
 	if (!(ptr == object.ptr && size == object.size))
 	{
@@ -182,7 +182,7 @@ Uni_Ptr<T>& Uni_Ptr<T>::operator=(Uni_Ptr&& object)
 	return *this;
 }
 template<typename T>
-void Uni_Ptr<T>::show()
+void Sha_Ptr<T>::show()
 {
 	for (size_t i = 0; i < size; i++)
 	{
@@ -203,6 +203,17 @@ int main()
 	u2 = move(u1);
 	cout << "u2:\t";
 	u2.show();
+
+	int size2 = 5;
+	int* arr2 = new int[size2] {6, 7, 8, 9, 10};
+	Sha_Ptr<int> s1(arr2, 5);
+	cout << "s1:\t";
+	s1.show();
+
+	Sha_Ptr<int> s2;
+	s2 = move(s1);
+	cout << "s2:\t";
+	s2.show();
 
 	return 0;
 }
