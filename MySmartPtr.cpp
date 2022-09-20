@@ -1,4 +1,5 @@
 #include<iostream>
+#include<map>
 using namespace std;
 
 //Задание 1.
@@ -102,15 +103,17 @@ class Sha_Ptr
 {
 	T* ptr;
 	int size;
-	int count;
+	static map<T*, int > data_memory;
 public:
+	
 	Sha_Ptr(T* ptrP);
 	Sha_Ptr(T* ptrP, int sizeP);
 	Sha_Ptr();
 	~Sha_Ptr();
+	void del();
 	T& operator*();
-	Sha_Ptr(Sha_Ptr& object) = delete;
-	Sha_Ptr& operator=(Sha_Ptr& object) = delete;
+	Sha_Ptr(Sha_Ptr& object);
+	Sha_Ptr& operator=(Sha_Ptr& object);
 	Sha_Ptr(Sha_Ptr&& object);
 	Sha_Ptr& operator=(Sha_Ptr&& object);
 	void show();
@@ -118,11 +121,18 @@ public:
 
 template<typename T>
 Sha_Ptr<T>::Sha_Ptr(T* ptrP, int sizeP) 
-	: ptr{ new T[sizeP] }, size{ sizeP }, count{1}
+	: ptr{ new T[sizeP] }, size{ sizeP }
 {
 	for (size_t i = 0; i < size; i++)
-		*(ptr + i) = *(ptrP + i);	
+		*(ptr + i) = *(ptrP + i);
+
+	data_memory.emplace(ptr, 1);
+
+
 }
+template <typename T>
+map<T*, int> Sha_Ptr<T>::data_memory;
+
 template<typename T>
 Sha_Ptr<T>::Sha_Ptr(T* ptrP) : Sha_Ptr(ptrP, 1) {}
 template<typename T>
@@ -130,17 +140,40 @@ Sha_Ptr<T>::Sha_Ptr()
 {
 	ptr = nullptr;
 	size = 0;
-	count = 0;
 	//cout << "Uni_Ptr constructed: " << ptr << endl;
+
+	map<int*, int>::iterator temp = data_memory.find(nullptr);
+
+	if (temp == data_memory.end())
+		data_memory.emplace(nullptr, 1);
+	else
+		data_memory[nullptr]++;
 }
 template<typename T>
 Sha_Ptr<T>::~Sha_Ptr()
 {
 	//cout << "Uni_Ptr destucted: " << ptr << endl;
-	if (count == 1)
+	if (data_memory[ptr] == 1)
 		delete[] ptr;
-	else
+	else if (data_memory[ptr] > 1)
+	{
+		data_memory[ptr]--;
 		ptr = nullptr;
+	}
+}
+template <typename T>
+void Sha_Ptr<T>::del()
+{
+	~Sha_Ptr();
+}
+template<typename T>
+Sha_Ptr<T>::Sha_Ptr(Sha_Ptr& object)
+{
+	size = object.size;
+	ptr = object.ptr;
+	for (size_t i = 0; i < size; i++)
+			*(ptr + i) = *(object.ptr + i);
+	data_memory[object.ptr]++;
 }
 template<typename T>
 Sha_Ptr<T>::Sha_Ptr(Sha_Ptr&& object)
@@ -157,6 +190,14 @@ Sha_Ptr<T>::Sha_Ptr(Sha_Ptr&& object)
 
 	object.ptr = nullptr;
 	object.size = 0;
+	object.count = 0;
+
+	auto temp = data_memory.find(object.ptr);
+	if (temp == data_memory.end())
+		data_memory.emplace(object.ptr, 1);
+	else
+		data_memory[temp]++;
+
 }
 template<typename T>
 T& Sha_Ptr<T>::operator*()
@@ -164,12 +205,28 @@ T& Sha_Ptr<T>::operator*()
 	return *ptr;
 }
 template<typename T>
+Sha_Ptr<T>& Sha_Ptr<T>::operator=(Sha_Ptr& object)
+{
+	if (!(ptr == object.ptr && size == object.size))
+	{
+		if (ptr != nullptr)
+			del();
+
+		size = object.size;
+		for (size_t i = 0; i < size; i++)
+			*(ptr + i) = *(object.ptr + i);
+
+		data_memory[object.ptr]++;
+	}
+	return *this;
+}
+template<typename T>
 Sha_Ptr<T>& Sha_Ptr<T>::operator=(Sha_Ptr&& object)
 {
 	if (!(ptr == object.ptr && size == object.size))
 	{
 		if (ptr != nullptr)
-			delete[] ptr;
+			del();
 
 		size = object.size;
 		ptr = new T[size];
@@ -178,6 +235,12 @@ Sha_Ptr<T>& Sha_Ptr<T>::operator=(Sha_Ptr&& object)
 
 		object.ptr = nullptr;
 		object.size = 0;
+
+		auto temp = data_memory.find(object.ptr);
+		if (temp == data_memory.end())
+			data_memory.emplace(object.ptr, 1);
+		else
+			data_memory[temp]++;
 	}
 	return *this;
 }
@@ -193,6 +256,7 @@ void Sha_Ptr<T>::show()
 
 int main()
 {
+	
 	int size = 5;
 	int* arr = new int[size] {1, 2, 3, 4, 5};
 	Uni_Ptr<int> u1(arr, 5);
@@ -210,10 +274,13 @@ int main()
 	cout << "s1:\t";
 	s1.show();
 
-	Sha_Ptr<int> s2;
-	s2 = move(s1);
+	Sha_Ptr<int> s2(s1);
 	cout << "s2:\t";
 	s2.show();
+
+	Sha_Ptr<int> s3(s1);
+	cout << "s3:\t";
+	s3.show();
 
 	return 0;
 }
